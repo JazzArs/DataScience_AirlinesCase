@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Операция "Поймать Шпиона" - Технический разбор</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712; /* gray-950 */
+            color: #f9fafb; /* gray-50 */
+        }
+        .glass-header {
+            background-color: rgba(3, 7, 18, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+        }
+        .nav-item {
+            position: relative;
+            transition: color 0.3s;
+            padding-bottom: 8px;
+        }
+        .nav-item:hover {
+            color: #06b6d4; /* cyan-500 */
+        }
+        .nav-item.active {
+            color: #06b6d4; /* cyan-500 */
+            font-weight: 600;
+        }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #06b6d4; /* cyan-500 */
+        }
+        .card {
+            background-color: rgba(17, 24, 39, 0.6); /* gray-900/60 */
+            border: 1px solid #374151; /* gray-700 */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(6, 182, 212, 0.1);
+            border-color: rgba(6, 182, 212, 0.5);
+        }
+        .step-bubble {
+            background: linear-gradient(145deg, #0891b2, #06b6d4);
+            color: white;
+            border-radius: 50%;
+            width: 3.5rem;
+            height: 3.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 1.5rem auto;
+            border: 4px solid rgba(6, 182, 212, 0.2);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+        .text-glow {
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+        }
+        /* Styles for code blocks */
+        pre code.hljs {
+            display: block;
+            overflow-x: auto;
+            padding: 1.5em;
+            background: #282c34;
+            border-radius: 0.5rem;
+            border: 1px solid #374151;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<header class="glass-header sticky top-0 z-50">
+    <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+        <div class="text-2xl font-bold text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-cyan-400">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.588 8.188a7.5 7.5 0 01-16.064 0c0-2.92.556-5.709 1.588-8.188a7.5 7.5 0 0111.964-6.257zM16.5 10.5a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM12 10.5c0 1.13-.231 2.194-.645 3.192" />
+            </svg>
+            <span>Технический Разбор</span>
+        </div>
+        <div class="hidden md:flex space-x-5 text-sm text-gray-300">
+            <a href="#intro" class="nav-item active">Введение</a>
+            <a href="#strategy" class="nav-item">Стратегия</a>
+            <a href="#loading" class="nav-item">Шаг 1</a>
+            <a href="#preprocessing" class="nav-item">Шаг 2</a>
+            <a href="#analysis" class="nav-item">Шаг 3</a>
+            <a href="#scoring" class="nav-item">Шаг 4</a>
+            <a href="#culmination" class="nav-item">Кульминация</a>
+            <a href="#results" class="nav-item">Результаты</a>
+        </div>
+    </nav>
+</header>
+
+<main class="container mx-auto px-6 py-16 sm:py-24">
+
+    <section id="intro" class="text-center mb-24 md:mb-32">
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-6 text-white text-glow">Система детекции аномалий в авиаперелетах</h1>
+        <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto">
+            Технический разбор методологии и пайплайна для построения воспроизводимой системы детекции аномалий. В этом отчете представлен пошаговый процесс анализа, от загрузки и очистки сырых данных до реализации скоринговой модели для выявления профилей с высоким риском.
+        </p>
+         <div class="mt-12 card max-w-2xl mx-auto text-left">
+            <h3 class="text-xl font-bold text-center mb-4 text-white">Инструментарий и стек</h3>
+            <div class="grid grid-cols-2 gap-4 text-gray-300">
+                <div><strong>Язык:</strong> Python</div>
+                <div><strong>Среда:</strong> Google Colab</div>
+                <div><strong>Ключевые библиотеки:</strong> Pandas</div>
+                <div><strong>Методы парсинга:</strong> Regex</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="strategy" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Постановка задачи и стратегия анализа</h2>
+        </div>
+
+        <div class="mt-12 max-w-4xl mx-auto space-y-10 text-lg text-gray-300">
+            <div class="card p-8">
+                <h3 class="text-xl font-bold text-cyan-400 mb-3 flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                    <span>Проблема: "Цифровые призраки" в потоке данных</span>
+                </h3>
+                <p>
+                    Исходная проблема заключалась в идентификации нелегитимных акторов, использующих гражданскую авиацию в противоправных целях. Ключевая сложность состоит в том, что такие субъекты целенаправленно мимикрируют под обычных пассажиров. Прямой поиск по известным данным (ФИО, документы) неэффективен из-за использования документов прикрытия и постоянной смены личных данных. Задача была переформулирована с языка безопасности на язык Data Science: как в сверхбольшом и "шумном" датасете найти скрытые, неявные паттерны поведения, которые статистически отличают "цифрового призрака" от законопослушного пассажира?
+                </p>
+            </div>
+
+            <div class="card p-8">
+                <h3 class="text-xl font-bold text-cyan-400 mb-3 flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <span>Стратегическое решение: от реактивного поиска к проактивной системе</span>
+                </h3>
+                <p>
+                    На начальном этапе был сделан фундаментальный выбор: мы отказались от идеи "поймать конкретного шпиона" в пользу создания <strong class="font-semibold text-white">воспроизводимой системы скоринга рисков</strong>. Этот подход имеет неоспоримые преимущества:
+                </p>
+                <ul class="list-disc list-inside mt-4 space-y-2 text-gray-400">
+                    <li><strong class="font-semibold text-gray-300">Масштабируемость:</strong> Система способна обрабатывать любые объемы новых данных без изменения логики.</li>
+                    <li><strong class="font-semibold text-gray-300">Объективность:</strong> Оценка основана на математически измеримых поведенческих аномалиях, а не на субъективных предположениях.</li>
+                    <li><strong class="font-semibold text-gray-300">Устойчивость:</strong> Система нацелена на поведенческие паттерны, которые гораздо сложнее и дороже подделать, чем сменить паспорт.</li>
+                </ul>
+                <p class="mt-4">
+                    Таким образом, фокус сместился с поиска личностей на поиск и оценку аномального поведения как такового.
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-20">
+            <h3 class="text-2xl font-bold text-center mb-8 text-white">Ключевые участники</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Дмитрий</h4>
+                    <p class="text-cyan-400 font-medium">Data Engineer</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Отвечал за сборку, очистку и нормализацию данных из 6 гетерогенных источников в единый, готовый к анализу датасет.</p>
+                </div>
+                <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Арслан</h4>
+                    <p class="text-cyan-400 font-medium">Data Analyst</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Разработал и реализовал алгоритмы поиска "красных флагов" на основе выдвинутых гипотез, формализовал критерии аномалий.</p>
+                </div>
+                <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Илья</h4>
+                    <p class="text-cyan-400 font-medium">Data Scientist</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Спроектировал и внедрил скоринговую модель, присвоил веса аномалиям и провел финальную приоритизацию профилей риска.</p>
+                </div>
+                <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Федор</h4>
+                    <p class="text-cyan-400 font-medium">Product Manager</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Координировал работу команды, обеспечивал связь с бизнес-требованиями и отвечал за финальную презентацию результатов.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="loading" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">1</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 1: Загрузка и первичный анализ данных</h2>
+            <div class="mt-8 max-w-3xl mx-auto bg-gray-900/50 border-l-4 border-cyan-500 p-6 rounded-lg shadow-lg">
+                <p class="text-lg text-gray-300 text-left italic">
+                    <strong>Цель этапа:</strong> Преодолеть первоначальный хаос в данных. Наша задача — не просто загрузить <strong class="font-semibold text-cyan-400">2.1 ГБ</strong> информации из <strong class="font-semibold text-cyan-400">6</strong> разных источников, а понять их структуру, выявить проблемы (смешанные типы, "мусор") и заложить фундамент для последующей очистки.
+                </p>
+            </div>
+        </div>
+
+        <div class="card mt-16">
+            <h3 class="text-xl font-bold text-white mb-4 text-center">Гетерогенность исходных данных</h3>
+            <p class="text-gray-400 text-center mb-6">Анализ начинается с <strong class="font-semibold text-cyan-400">шести</strong> источников в различных форматах, что представляет собой типичную проблему Data Engineering. Наибольший объем данных представлен в неструктурированных (YAML) и слабоструктурированных (JSON) форматах, что требует сложных парсеров и валидации.</p>
+            <div class="h-96">
+                <canvas id="sourceDataChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card mt-16">
+            <p class="text-gray-400 mb-4">Код загрузки данных и вывод основной информации о DataFrame.</p>
+            <pre><code class="language-python">import pandas as pd
+df = pd.read_csv('merged.csv', delimiter=';', low_memory=False)
+df.info(memory_usage='deep')</code></pre>
+            <pre class="mt-4"><code class="hljs">&lt;class 'pandas.core.frame.DataFrame'&gt;
+RangeIndex: 3026661 entries
+Data columns (total 20 columns):
+... (сокращено) ...
+memory usage: 2.1 GB</code></pre>
+            <p class="mt-6 text-gray-300">
+                Первичный анализ через <code class="bg-gray-700 p-1 rounded text-sm">df.info()</code> показывает наличие <strong>3М+</strong> записей и <strong>20</strong> признаков. Общий объем данных — <strong>2.1 ГБ</strong>. Наличие `DtypeWarning` при загрузке подтверждает смешанные типы данных — типичная проблема "сырых" данных, требующая внимания на следующем шаге.
+            </p>
+            
+            <hr class="my-8 border-gray-700">
+
+            <h3 class="text-xl font-bold text-white mb-4 text-center">Распределение типов данных</h3>
+            <div class="h-64 w-full max-w-sm mx-auto">
+                <canvas id="dataTypesChart"></canvas>
+            </div>
+            <p class="mt-4 text-center text-gray-400 text-sm">Преобладание типа `object` (<strong class="font-semibold text-cyan-400">80%</strong>) указывает на необходимость приведения типов и очистки данных.</p>
+        </div>
+    </section>
+
+    <section id="preprocessing" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">2</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 2: Очистка данных и Feature Engineering</h2>
+            <div class="mt-8 max-w-3xl mx-auto bg-gray-900/50 border-l-4 border-cyan-500 p-6 rounded-lg shadow-lg">
+                <p class="text-lg text-gray-300 text-left italic">
+                    <strong>Цель этапа:</strong> Превратить "сырые" данные в ценный актив. Мы должны преобразовать хаотичный набор записей в структурированный и чистый датасет, создав уникальные идентификаторы для отслеживания индивидуумов и безжалостно удалив все, что может исказить результаты анализа.
+                </p>
+            </div>
+        </div>
+
+        <div class="card mt-16">
+            <h3 class="text-xl font-bold text-white mb-4">Создание уникального ID и очистка</h3>
+            <p class="text-gray-400 mb-4">Это фундаментальный шаг, который переводит анализ с уровня анонимных записей на уровень отслеживания конкретных индивидуумов во времени. Синтетический ключ `ID` (ФИО + дата рождения) позволяет агрегировать поведение одного человека, даже если он использует разные документы, что критически важно для поиска паттернов. Затем удаляются "призрачные" записи, не несущие полезной информации, чтобы избежать 'шума' в результатах.</p>
+            <pre><code class="language-python"># Создание уникального ID
+df['ID'] = df['real_first_name'].astype(str) + ' ' + \
+             df['real_last_name'].astype(str) + ' ' + \
+             df['birth_date'].astype(str)
+
+# Очистка от "призрачных" записей
+rows_before = len(df)
+df.dropna(subset=['real_first_name', 'real_last_name', 'birth_date', 'document_num'], how="all", inplace=True)
+print(f"Удалено 'призрачных' записей: {rows_before - len(df)}")</code></pre>
+            <pre class="mt-4"><code class="hljs">Удалено 'призрачных' записей: 6020</code></pre>
+            <p class="mt-4 text-gray-300">В результате было удалено <strong class="font-semibold text-red-500">6 020</strong> "призрачных" записей, не несущих полезной информации.</p>
+        </div>
+
+        <div class="card mt-16">
+            <h3 class="text-xl font-bold text-white mb-4">Восстановление данных по программе лояльности</h3>
+            <p class="text-gray-400 mb-4">Был применен алгоритм для восстановления недостающих данных (ФИО, документы) на основе карт лояльности. Ввиду длительного времени выполнения, для дальнейшей работы используется предвычисленный датасет.</p>
+             <pre><code class="language-python"># Для ускорения процесса загружаем предвычисленный датасет
+df['birth_date'] = pd.to_datetime(df['birth_date'], errors='coerce')
+
+df = pd.read_csv('merged_full.csv', delimiter=';', low_memory=False)
+print("Финальный размер датасета:", df.shape)</code></pre>
+            <div class="mt-4 rounded-lg border border-gray-700 bg-[#282c34] p-6 font-mono text-sm">
+                <span class="font-semibold text-green-400">Финальный размер датасета:</span>
+                <span class="text-gray-300">(3020641, 23)</span>
+            </div>
+            <p class="mt-4 text-gray-300">После всех преобразований финальный "золотой" датасет составил <strong class="font-semibold text-green-400">3,020,641</strong> записей с <strong class="font-semibold text-green-400">23</strong> признаками, полностью готовыми к анализу.</p>
+         </div>
+    </section>
+
+    <section id="analysis" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">3</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 3: Поиск паттернов ("Красных флагов")</h2>
+            <div class="mt-8 max-w-3xl mx-auto bg-gray-900/50 border-l-4 border-cyan-500 p-6 rounded-lg shadow-lg">
+                <p class="text-lg text-gray-300 text-left italic">
+                    <strong>Цель этапа:</strong> Начать "охоту" за аномалиями. Используя очищенные данные, мы приступаем к поиску "красных флагов" — паттернов, которые выбиваются из общей картины. Наш подход основан на двух китах: поиске <strong>логических несостыковок</strong> (чего быть не должно) и <strong>статистических выбросов</strong> (что бывает крайне редко).
+                </p>
+            </div>
+        </div>
+        
+        <div class="card mt-16">
+            <h3 class="text-xl font-bold text-white mb-4">Сводка по "Красным флагам"</h3>
+            <p class="text-gray-400 mb-4">Визуализация количества уникальных ID, идентифицированных по каждой аномалии. "Смена документов" является наиболее массовым флагом, в то время как "Частые перелеты" — наиболее редким и потенциально более значимым.</p>
+            <div class="h-96">
+                <canvas id="anomalyCountsChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section id="scoring" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">4</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 4: Скоринг и приоритизация</h2>
+            <div class="mt-8 max-w-3xl mx-auto bg-gray-900/50 border-l-4 border-cyan-500 p-6 rounded-lg shadow-lg">
+                <p class="text-lg text-gray-300 text-left italic">
+                    <strong>Цель этапа:</strong> Отделить "сигнал" от "шума". Не все аномалии одинаково опасны. Наша задача — разработать систему взвешенного скоринга, которая позволит не просто считать "красные флаги", а оценивать совокупный уровень угрозы от каждого индивидуума. Это финальный шаг для приоритизации и выявления самых опасных профилей.
+                </p>
+            </div>
+        </div>
+        <div class="card mt-16">
+            <p class="text-gray-400 mb-4">Логика присвоения весов и подсчета итогового балла. Веса отражают уровень угрозы: от низкого (1 балл за смену документов) до критического (8 баллов за использование одного билета разными людьми).</p>
+            <pre><code class="language-python">weights = { 'sus_ticket': 8, 'sus_30d': 4, ... }
+
+id_scores = {}
+for criteria, ids in all_sus_ids.items():
+    weight = weights[criteria]
+    for id_val in ids:
+        id_scores[id_val] = id_scores.get(id_val, 0) + weight
+
+# Подсчет ID с максимальным баллом (15)
+count_score_15 = sum(1 for _, s in id_scores.items() if s == 15)
+print(f"Кол-во ID с баллом 15: {count_score_15}")</code></pre>
+            <pre class="mt-4"><code class="hljs">Кол-во ID с баллом 15: 381</code></pre>
+            
+            <hr class="my-8 border-gray-700">
+
+            <h3 class="text-xl font-bold text-white mb-4 text-center">Веса "Красных флагов" в скоринге</h3>
+            <div class="h-64 w-full max-w-sm mx-auto">
+                <canvas id="scoreWeightsChart"></canvas>
+            </div>
+            <p class="mt-4 text-center text-gray-400 text-sm">"Двойной владелец" (<strong class="font-semibold text-red-400">8 баллов</strong>) составляет более <strong class="font-semibold text-red-400">50%</strong> от максимального скора.</p>
+        </div>
+    </section>
+
+    <section id="culmination" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble bg-red-600 border-red-500/20 shadow-red-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
+                </svg>
+            </div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white text-glow">Кульминация: Группа Максимального Риска</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                После применения скоринговой модели ко всем профилям, система выделила группу лиц с максимальным набором "красных флагов". Это те, чья деятельность требует немедленного внимания.
+            </p>
+        </div>
+
+        <div class="mt-16 max-w-4xl mx-auto card bg-gradient-to-br from-gray-900 to-gray-900/70 border-2 border-red-500/50 p-10 text-center shadow-2xl shadow-red-500/10">
+            <p class="text-base font-medium text-red-300 tracking-widest uppercase">Главный результат</p>
+            <div class="my-4 flex items-center justify-center gap-6 flex-wrap">
+                <div class="flex items-baseline gap-3">
+                    <p class="text-7xl md:text-8xl font-extrabold text-white text-glow">381</p>
+                    <p class="text-3xl font-bold text-red-200">человек</p>
+                </div>
+                <div class="flex items-baseline gap-3">
+                    <p class="text-7xl md:text-8xl font-extrabold text-white text-glow">15</p>
+                    <p class="text-3xl font-bold text-red-200">баллов</p>
+                </div>
+            </div>
+            <p class="text-xl text-gray-300 mt-4">
+                Это наиболее подозрительные профили, требующие дальнейшей проверки.
+            </p>
+        </div>
+    </section>
+
+    <section id="results" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Результаты и выводы</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                Применение скоринговой модели позволило не просто найти аномалии, а классифицировать всех индивидуумов по уровню потенциальной угрозы. Финальное распределение баллов наглядно демонстрирует, насколько узкой является группа максимального риска, подтверждая эффективность нашего подхода "поиска иголки в стоге сена".
+            </p>
+        </div>
+
+        <div class="card mt-16">
+            <h3 class="text-xl font-bold text-center mb-6 text-white">Распределение итоговых баллов</h3>
+            <div class="h-96">
+                <canvas id="scoreDistributionChart"></canvas>
+            </div>
+            <p class="mt-4 text-center text-gray-400 text-sm">График показывает экспоненциальное падение количества людей с ростом скорингового балла. Группа с <strong class="font-semibold text-red-400">15 баллами</strong> — статистически значимая аномалия.</p>
+        </div>
+
+        <div class="mt-20">
+            <h3 class="text-2xl font-bold text-center mb-8 text-white">Ключевые достижения проекта</h3>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">От Хаоса к Порядку</h3>
+                    <p class="text-gray-400">Мы превратили <strong class="font-semibold text-cyan-400">6</strong> разрозненных источников в единую, чистую базу данных.</p>
+                </div>
+                <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">От Данных к Знаниям</h3>
+                    <p class="text-gray-400">Мы разработали <strong class="font-semibold text-cyan-400">4 "красных флага"</strong> и систему скоринга для оценки угроз.</p>
+                </div>
+                <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">От Шума к Сигналу</h3>
+                    <p class="text-gray-400">Мы отфильтровали <strong class="font-semibold text-cyan-400">3 млн.</strong> записей до <strong class="font-semibold text-red-500">381 профиля</strong> с наивысшим риском.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="text-center py-12 text-gray-500 border-t border-gray-800 mt-24">
+    © 2025 Мы чуть не сдохли это делать, всем спасибо!
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    hljs.highlightAll();
+    
+    // --- Navigation ---
+    const navItems = document.querySelectorAll('.nav-item');
+    const sections = document.querySelectorAll('main > section');
+    const header = document.querySelector('header');
+    
+    const observer = new IntersectionObserver((entries) => {
+        let activeId = '';
+        for (const section of sections) {
+            // Check if section is below the header fold
+            if (section.getBoundingClientRect().top > header.offsetHeight + 1) {
+                break;
+            }
+            activeId = section.id;
+        }
+
+        if (!activeId && sections.length > 0) {
+             const firstSectionRect = sections[0].getBoundingClientRect();
+             if (firstSectionRect.top > header.offsetHeight) {
+                activeId = sections[0].id;
+             }
+        }
+        
+        navItems.forEach(nav => {
+            nav.classList.toggle('active', nav.hash === `#${activeId}`);
+        });
+
+    }, { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1.0] });
+
+    sections.forEach(section => observer.observe(section));
+
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetElement = document.querySelector(item.hash);
+            if (targetElement) {
+                const offset = document.querySelector('header').offsetHeight;
+                window.scrollTo({
+                    top: targetElement.offsetTop - offset,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // --- Chart Default Config ---
+    Chart.defaults.color = '#9ca3af';
+    Chart.defaults.font.family = 'Inter';
+
+    const defaultChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                enabled: true,
+                backgroundColor: '#1f2937', // gray-800
+                titleColor: '#f9fafb', // gray-50
+                bodyColor: '#d1d5db', // gray-300
+                borderColor: '#374151', // gray-700
+                borderWidth: 1,
+                cornerRadius: 4,
+                padding: 12,
+                displayColors: false,
+                bodyFont: { size: 14 },
+                titleFont: { weight: 'bold', size: 16 }
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#9ca3af', font: {} },
+                grid: { color: 'rgba(55, 65, 81, 0.5)' }
+            },
+            y: {
+                ticks: { color: '#9ca3af', font: {} },
+                grid: { color: 'rgba(55, 65, 81, 0.5)' },
+                beginAtZero: true
+            }
+        }
+    };
+    
+    const chartColors = [
+        'rgba(6, 182, 212, 0.5)',   // cyan-500
+        'rgba(139, 92, 246, 0.5)',  // violet-500
+        'rgba(34, 197, 94, 0.5)',   // green-500
+        'rgba(239, 68, 68, 0.5)',    // red-500
+    ];
+    const chartBorderColors = [
+        'rgba(6, 182, 212, 1)',
+        'rgba(139, 92, 246, 1)',
+        'rgba(34, 197, 94, 1)',
+        'rgba(239, 68, 68, 1)',
+    ];
+
+    // --- Chart: Source Data ---
+    const sourceDataCtx = document.getElementById('sourceDataChart');
+    if (sourceDataCtx) {
+        new Chart(sourceDataCtx, {
+            type: 'bar',
+            data: {
+                labels: ['-yaml', '-json', '-xls', '-xml', '-tab', '-csv'],
+                datasets: [{
+                    label: 'Количество записей',
+                    data: [1687054, 1308988, 615772, 436091, 155758, 155148],
+                    backgroundColor: [
+                        'rgba(6, 182, 212, 0.5)',   // cyan-500
+                        'rgba(99, 102, 241, 0.5)',  // indigo-500
+                        'rgba(34, 197, 94, 0.5)',   // green-500
+                        'rgba(245, 158, 11, 0.5)',  // amber-500
+                        'rgba(239, 68, 68, 0.5)',   // red-500
+                        'rgba(14, 165, 233, 0.5)'   // sky-500
+                    ],
+                    borderColor: [
+                        'rgba(6, 182, 212, 1)',
+                        'rgba(99, 102, 241, 1)',
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(245, 158, 11, 1)',
+                        'rgba(239, 68, 68, 1)',
+                        'rgba(14, 165, 233, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                ...defaultChartOptions,
+                indexAxis: 'y',
+                scales: {
+                     x: {
+                        ...defaultChartOptions.scales.x,
+                        title: { display: true, text: 'Количество записей', color: '#9ca3af' }
+                    },
+                    y: { ...defaultChartOptions.scales.y }
+                },
+                plugins: {
+                    ...defaultChartOptions.plugins,
+                    tooltip: {
+                        ...defaultChartOptions.plugins.tooltip,
+                        callbacks: {
+                            label: (context) => `${context.formattedValue} записей`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Chart 1: Data Types ---
+    const dataTypesCtx = document.getElementById('dataTypesChart');
+    if (dataTypesCtx) {
+        new Chart(dataTypesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Object (строки)', 'Float64 (числа)', 'Int64 (числа)'],
+                datasets: [{
+                    label: 'Количество колонок',
+                    data: [16, 3, 1],
+                    backgroundColor: chartColors,
+                    borderColor: '#030712',
+                    borderWidth: 4,
+                }]
+            },
+            options: { 
+                ...defaultChartOptions,
+                plugins: {
+                    ...defaultChartOptions.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+        
+    // --- Chart 2: Anomaly Counts ---
+    const anomalyCountsCtx = document.getElementById('anomalyCountsChart');
+    if (anomalyCountsCtx) {
+        new Chart(anomalyCountsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Смена документов', 'Двойной владелец', 'Сложный транзит', 'Частые перелеты'],
+                datasets: [{
+                    label: 'Кол-во уникальных ID',
+                    data: [97635, 58185, 23878, 16654],
+                    backgroundColor: [chartColors[1], chartColors[3], chartColors[0], chartColors[2]],
+                    borderColor: [chartBorderColors[1], chartBorderColors[3], chartBorderColors[0], chartBorderColors[2]],
+                    borderWidth: 2,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                ...defaultChartOptions,
+                plugins: { ...defaultChartOptions.plugins, legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
+                    y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(55, 65, 81, 0.5)' } }
+                }
+            }
+        });
+    }
+
+    // --- Chart 3: Score Weights ---
+    const scoreWeightsCtx = document.getElementById('scoreWeightsChart');
+    if (scoreWeightsCtx) {
+        new Chart(scoreWeightsCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Двойной владелец (+8)', 'Частые перелеты (+4)', 'Сложный транзит (+2)', 'Смена документов (+1)'],
+                datasets: [{
+                    label: 'Вес в баллах',
+                    data: [8, 4, 2, 1],
+                    backgroundColor: [chartColors[3], chartColors[2], chartColors[0], chartColors[1]],
+                    borderColor: '#030712',
+                    borderWidth: 4,
+                }]
+            },
+            options: { 
+                 ...defaultChartOptions,
+                 plugins: {
+                    ...defaultChartOptions.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // --- Chart 4: Score Distribution ---
+    const scoreDistributionCtx = document.getElementById('scoreDistributionChart');
+    if (scoreDistributionCtx) {
+        new Chart(scoreDistributionCtx, {
+            type: 'bar',
+            data: {
+                labels: ['1-4 балла', '5-8 баллов', '9-12 баллов', '13-14 баллов', '15 баллов'],
+                datasets: [{
+                    label: 'Количество человек',
+                    data: [48543, 21987, 5602, 978, 381],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.5)',   // green-500
+                        'rgba(6, 182, 212, 0.5)',   // cyan-500
+                        'rgba(139, 92, 246, 0.5)',  // violet-500
+                        'rgba(234, 179, 8, 0.5)',   // yellow-500
+                        'rgba(239, 68, 68, 0.5)'    // red-500
+                    ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(6, 182, 212, 1)',
+                        'rgba(139, 92, 246, 1)',
+                        'rgba(234, 179, 8, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                ...defaultChartOptions,
+                scales: {
+                    x: { ...defaultChartOptions.scales.x },
+                    y: {
+                        ...defaultChartOptions.scales.y,
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Количество человек (логарифмическая шкала)', color: '#9ca3af' }
+                    }
+                },
+                plugins: {
+                    ...defaultChartOptions.plugins,
+                    tooltip: {
+                        ...defaultChartOptions.plugins.tooltip,
+                        callbacks: {
+                            label: (context) => `${context.formattedValue} чел.`
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>

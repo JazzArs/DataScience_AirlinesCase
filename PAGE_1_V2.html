@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Операция "Поймать Шпиона" - Аналитический Отчет</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712; /* gray-950 */
+            color: #f9fafb; /* gray-50 */
+        }
+        .glass-header {
+            background-color: rgba(3, 7, 18, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+        }
+        .nav-item {
+            position: relative;
+            transition: color 0.3s;
+            padding-bottom: 8px;
+        }
+        .nav-item:hover {
+            color: #06b6d4; /* cyan-500 */
+        }
+        .nav-item.active {
+            color: #06b6d4; /* cyan-500 */
+            font-weight: 600;
+        }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #06b6d4; /* cyan-500 */
+        }
+        .card {
+            background-color: rgba(17, 24, 39, 0.6); /* gray-900/60 */
+            border: 1px solid #374151; /* gray-700 */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(6, 182, 212, 0.1);
+            border-color: rgba(6, 182, 212, 0.5);
+        }
+        .step-bubble {
+            background: linear-gradient(145deg, #0891b2, #06b6d4);
+            color: white;
+            border-radius: 50%;
+            width: 3.5rem;
+            height: 3.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 1.5rem auto;
+            border: 4px solid rgba(6, 182, 212, 0.2);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+        .funnel-stage {
+            position: relative;
+            padding: 1.25rem 2rem;
+            color: white;
+            text-align: center;
+            clip-path: polygon(0% 0%, 100% 0%, 92% 100%, 8% 100%);
+            margin: -1px auto 0;
+            transition: transform 0.3s, filter 0.3s;
+        }
+        .funnel-stage:hover {
+            transform: scale(1.03);
+            filter: brightness(1.2);
+        }
+        .text-glow {
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<header class="glass-header sticky top-0 z-50">
+    <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+        <div class="text-2xl font-bold text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-cyan-400">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.588 8.188a7.5 7.5 0 01-16.064 0c0-2.92.556-5.709 1.588-8.188a7.5 7.5 0 0111.964-6.257zM16.5 10.5a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM12 10.5c0 1.13-.231 2.194-.645 3.192" />
+            </svg>
+            <span>Операция: <span class="font-light text-gray-300">Поймать Шпиона</span></span>
+        </div>
+        <div class="hidden md:flex space-x-5 text-sm text-gray-300">
+            <a href="#intro" class="nav-item active">Введение</a>
+            <a href="#discovery" class="nav-item">Задача</a>
+            <a href="#process" class="nav-item">Шаг 1</a>
+            <a href="#hypotheses" class="nav-item">Шаг 2</a>
+            <a href="#analysis" class="nav-item">Шаг 3</a>
+            <a href="#scoring" class="nav-item">Шаг 4</a>
+            <a href="#funnel" class="nav-item">Шаг 5</a>
+            <a href="#culmination" class="nav-item">Кульминация</a>
+            <a href="#results" class="nav-item">Результаты</a>
+        </div>
+    </nav>
+</header>
+
+<main class="container mx-auto px-6 py-16 sm:py-24">
+
+    <section id="intro" class="text-center mb-24 md:mb-32">
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-6 text-white text-glow">Как мы нашли иголку в стоге сена</h1>
+        <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto">
+            Наша команда из <strong class="font-semibold text-cyan-400">4-х человек</strong> проанализировала <strong class="font-semibold text-cyan-400">миллионы</strong> записей о перелетах,
+            чтобы выявить потенциальные угрозы безопасности и найти "призраков" в системе.
+        </p>
+    </section>
+
+    <section id="discovery" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble bg-red-500 border-red-400/20 shadow-red-500/30">!</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-white">Постановка Задачи: "Призрачная Угроза"</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                Существует реальная и постоянная угроза: шпионы и враждебные агенты используют гражданские
+                авиаперелеты для проникновения, координации и экстренной эвакуации. Эта проблема представляет
+                огромную опасность для безопасности государства и его граждан.
+            </p>
+        </div>
+
+        <div class="mt-16 grid md:grid-cols-2 gap-8 items-start">
+            <div class="card">
+                <h3 class="text-xl font-bold text-center mb-4 text-white">Масштаб Проблемы (Статистика)</h3>
+                <p class="text-center text-gray-400 mb-6">(Оценочные данные для иллюстрации серьезности)</p>
+                <div class="space-y-6">
+                    <div class="flex items-center gap-4">
+                        <div class="text-cyan-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-red-500">~15,000</div>
+                            <div class="text-gray-400">Человек ежегодно пересекают границу РФ с поддельными или "чистыми" документами прикрытия.</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-cyan-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 -rotate-45">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-red-500">~4%</div>
+                            <div class="text-gray-400">Всех "транзитных" перелетов в третьи страны используются для запутывания следов.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="text-xl font-bold text-center mb-4 text-white">Наш Подход: Мозговой Штурм</h3>
+                <p class="text-gray-300">
+                    Проблема была поставлена. Мы собрались всей командой и устроили "мозговой штурм", чтобы
+                    определить, как мы можем использовать имеющиеся у нас данные для выявления этих "призраков".
+                    Было решено, что мы не будем искать одного конкретного человека, а создадим систему,
+                    которая сама "подсветит" наиболее подозрительные паттерны поведения.
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-20">
+            <h3 class="text-2xl font-bold text-center mb-8 text-white">Наша Команда</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Дмитрий</h4>
+                    <p class="text-cyan-400 font-medium">Разработчик</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Задача: Собрать, объединить и очистить данные из 6 разных источников. Подготовить "чистый" датасет для анализа.</p>
+                </div>
+                <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Арслан</h4>
+                    <p class="text-cyan-400 font-medium">Аналитик</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Задача: Разработать и проверить гипотезы. Написать алгоритмы для поиска "красных флагов".</p>
+                </div>
+                <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Илья</h4>
+                    <p class="text-cyan-400 font-medium">Аналитик</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Задача: Создать систему скоринга (оценки). Выявить ТОП-подозреваемых на основе рисков.</p>
+                </div>
+                <div class="card text-center items-center flex flex-col">
+                    <div class="mb-3 text-cyan-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Федор</h4>
+                    <p class="text-cyan-400 font-medium">Коммуникатор</p>
+                    <p class="text-sm text-gray-400 mt-2 flex-grow">Задача: Координировать команду и обеспечить, чтобы наши находки были понятны и представлены в виде решения.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="process" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">1</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 1: Сборка Пазла</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                Мы начали с хаоса. Данные были разбросаны по <strong class="font-semibold text-cyan-400">6</strong> разным типам файлов, каждый со своей структурой и форматом. Первая задача — собрать это воедино.
+            </p>
+        </div>
+
+        <div class="card mt-16">
+            <h3 class="text-xl font-bold text-center mb-6 text-white">Исходные Данные: "Цифровой Хаос"</h3>
+            <div class="h-96">
+                <canvas id="sourceDataChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-8 my-16">
+             <div class="card p-8 text-center">
+                <p class="text-sm font-medium text-gray-400">Всего записей найдено</p>
+                <p class="text-5xl font-extrabold text-cyan-400 mt-2">4,357,801</p>
+                <p class="text-gray-400 mt-3">Это наш "стог сена". Огромный массив сырых данных из 6 источников.</p>
+            </div>
+             <div class="card p-8 text-center">
+                <p class="text-sm font-medium text-gray-400">Записей после очистки</p>
+                <p class="text-5xl font-extrabold text-green-400 mt-2">3,026,663</p>
+                <p class="text-gray-400 mt-3">Удалили дубликаты и "мусор". Это наша рабочая база.</p>
+            </div>
+        </div>
+
+        <div class="text-center mt-20">
+             <h3 class="text-2xl font-bold text-center mb-6 text-white">Что значит "Собрать Пазл"?</h3>
+             <p class="text-lg text-gray-400 text-center max-w-2xl mx-auto mb-10">
+                Это был не просто импорт. Это была сложная работа по "переводу" данных на один общий язык.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="card text-center p-6 flex flex-col items-center">
+                <div class="mb-4 text-cyan-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001a10.5 10.5 0 01-1.423 5.854l-2.121 2.121a10.5 10.5 0 01-5.854 1.423h-.001v4.992h.001a10.5 10.5 0 015.854-1.423l2.121-2.121a10.5 10.5 0 011.423-5.854v-.001z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.977 14.652v-4.992h.001a10.5 10.5 0 011.423-5.854l2.121-2.121a10.5 10.5 0 015.854-1.423h.001v-4.992h-.001a10.5 10.5 0 00-5.854 1.423l-2.121 2.121a10.5 10.5 0 00-1.423 5.854v.001z" />
+                    </svg>
+                </div>
+                <h4 class="text-lg font-bold mb-2 text-white">1. Стандартизация</h4>
+                <p class="text-sm text-gray-400">Мы перевели <strong class="font-semibold text-cyan-400">6</strong> разных форматов (XML, JSON, TAB...) в единый стандарт (CSV) и привели их к общей структуре полей.</p>
+            </div>
+            <div class="card text-center p-6 flex flex-col items-center">
+                <div class="mb-4 text-cyan-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                    </svg>
+                </div>
+                <h4 class="text-lg font-bold mb-2 text-white">2. Нормализация</h4>
+                <p class="text-sm text-gray-400">Привели все значения к единому формату: даты, время (UTC), номера документов и имена. "Москва" и "MOSKVA" стали одним городом.</p>
+            </div>
+            <div class="card text-center p-6 flex flex-col items-center">
+                <div class="mb-4 text-cyan-400">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                    </svg>
+                </div>
+                <h4 class="text-lg font-bold mb-2 text-white">3. Слияние</h4>
+                <p class="text-sm text-gray-400">Объединили все очищенные данные в единую базу, используя жесткие критерии, чтобы не потерять и не исказить информацию.</p>
+            </div>
+        </div>
+
+        <hr class="my-16 border-t border-gray-700">
+
+        <div class="text-center">
+            <h3 class="text-2xl font-bold text-center mb-6 text-white">Финальная Подготовка Данных</h3>
+            <p class="text-lg text-gray-400 text-center max-w-2xl mx-auto mb-10">
+                Прежде чем начать анализ, мы создали "цифровые отпечатки" для каждого пассажира и провели финальное восстановление данных.
+            </p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 text-center">
+            <div class="card p-6">
+                <h4 class="text-lg font-bold mb-2 text-white">1. Создание Уникальных ID</h4>
+                <p class="text-sm text-gray-400">Каждый пассажир получил ID на основе <strong class="font-semibold text-cyan-400">3-х ключей</strong>: <br> <strong>(Имя + Фамилия + Дата Рождения)</strong>. Это позволило нам отслеживать одного человека, даже если он менял документы.</p>
+            </div>
+            <div class="card p-6">
+                <h4 class="text-lg font-bold mb-2 text-white">2. Удаление "Призраков"</h4>
+                <p class="text-sm text-gray-400">Мы удалили <strong class="font-semibold text-red-500">6 020</strong> строк, в которых не было никакой информации о пассажире (полностью пустые записи).</p>
+            </div>
+            <div class="card p-6">
+                <h4 class="text-lg font-bold mb-2 text-white">3. Восстановление Данных</h4>
+                <p class="text-sm text-gray-400">Используя данные о LoyaltyPass, мы смогли восстановить и подтвердить информацию о пассажирах, получив финальный датасет.</p>
+            </div>
+        </div>
+
+         <div class="card p-8 mt-12 max-w-2xl mx-auto text-center bg-cyan-900/50 border-cyan-500/50">
+            <p class="text-sm font-medium text-cyan-200">Финальный Датасет для Анализа</p>
+            <p class="text-5xl font-extrabold text-white mt-2">3,020,643</p>
+            <p class="text-cyan-200 mt-3">Это финальное, "золотое" количество записей, с которым аналитики начали свою работу.</p>
+        </div>
+    </section>
+
+    <section id="hypotheses" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">2</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 2: Гипотезы ("Красные Флаги")</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                Наш "мозговой штурм" привел нас к <strong class="font-semibold text-cyan-400">4</strong> основным гипотезам. Мы решили не искать конкретного человека, а искать аномальное поведение — "красные флаги".
+            </p>
+        </div>
+
+        <div class="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="card h-full flex flex-col items-center text-center">
+                <div class="mb-3 text-cyan-400">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-1.5h5.25m-5.25 0h5.25m-5.25 0h5.25m-5.25 0h5.25M3 4.5h15a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25H3a2.25 2.25 0 01-2.25-2.25V6.75A2.25 2.25 0 013 4.5z" />
+                    </svg>
+                </div>
+                <h4 class="font-bold text-lg text-white mb-2">Двойной Владелец</h4>
+                <p class="text-sm text-gray-400">У одного билета не может быть двух разных владельцев. Это явная аномалия.</p>
+            </div>
+            <div class="card h-full flex flex-col items-center text-center">
+                <div class="mb-3 text-cyan-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                </div>
+                <h4 class="font-bold text-lg text-white mb-2">Смена Документов</h4>
+                <p class="text-sm text-gray-400">Использование разных документов (паспортов) одним и тем же человеком — серьезный повод для проверки.</p>
+            </div>
+            <div class="card h-full flex flex-col items-center text-center">
+                <div class="mb-3 text-cyan-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 -rotate-45">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
+                </div>
+                <h4 class="font-bold text-lg text-white mb-2">Частые Перелеты</h4>
+                <p class="text-sm text-gray-400">Более <strong class="font-semibold text-red-500">3</strong> перелетов в месяц — это нетипично для туриста или бизнесмена. Это похоже на работу курьера.</p>
+            </div>
+            <div class="card h-full flex flex-col items-center text-center">
+                <div class="mb-3 text-cyan-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12.072c0 .738-.084 1.457-.25 2.153m-15.686 0A8.959 8.959 0 003 12.072c0 .738.084 1.457.25 2.153m15.186 0A12.02 12.02 0 0112 13.5c-2.998 0-5.74-.99-7.843-2.625m15.686 0A8.953 8.953 0 0121 12c0 .738-.084 1.457-.25 2.153m-15.686 0A8.953 8.953 0 003 12c0 .738.084 1.457.25 2.153" />
+                    </svg>
+                </div>
+                <h4 class="font-bold text-lg text-white mb-2">Сложный Транзит</h4>
+                <p class="text-sm text-gray-400">Подозрительный маршрут: въезд в РФ с последующим быстрым вылетом в третью страну (не в страну прибытия).</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="analysis" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">3</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 3: Анализ и Первые Находки</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                Аналитики применили алгоритмы к "золотому" датасету в <strong class="font-semibold text-cyan-400">3 020 643</strong> записей. Вот сколько раз мы обнаружили "красные флаги":
+            </p>
+        </div>
+
+        <div class="card mt-16">
+             <h3 class="text-xl font-bold text-center mb-6 text-white">Распределение "Красных Флагов"</h3>
+            <div class="h-96">
+                <canvas id="analysisResultsChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section id="scoring" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble bg-red-500 border-red-400/20 shadow-red-500/30">4</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 4: "Детектор Шпионов" (Скоринг)</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                Иметь список аномалий недостаточно. Нам нужно было выделить самых опасных. Мы ввели систему баллов, где каждый "красный флаг" имеет свой "вес" в зависимости от уровня угрозы.
+            </p>
+        </div>
+
+        <div class="card max-w-4xl mx-auto mt-16">
+            <h3 class="text-2xl font-bold text-center mb-6 text-white">Система Оценки Угроз</h3>
+            <div class="space-y-6">
+                <div class="flex items-start p-4 bg-red-900/30 rounded-lg">
+                    <div class="text-3xl font-bold text-red-400 w-24 text-center shrink-0">+ 8 бал.</div>
+                    <div class="ml-5">
+                        <h4 class="font-bold text-lg text-red-300">Двойной Владелец Билета</h4>
+                        <p class="text-gray-400 text-sm"><strong>Приоритет: КРИТИЧЕСКИЙ.</strong> Это не просто ошибка, это прямое нарушение базовой логики системы и, возможно, попытка подмены личности.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start p-4 bg-yellow-900/30 rounded-lg">
+                    <div class="text-3xl font-bold text-yellow-400 w-24 text-center shrink-0">+ 4 бал.</div>
+                    <div class="ml-5">
+                        <h4 class="font-bold text-lg text-yellow-300">Более 3-х Перелетов в Месяц</h4>
+                        <p class="text-gray-400 text-sm"><strong>Приоритет: ВЫСОКИЙ.</strong> Такая активность нетипична и указывает на системную деятельность (например, курьерскую), что требует внимания.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start p-4 bg-teal-900/30 rounded-lg">
+                    <div class="text-3xl font-bold text-teal-400 w-24 text-center shrink-0">+ 2 бал.</div>
+                    <div class="ml-5">
+                        <h4 class="font-bold text-lg text-teal-300">Сложный Транзит (РФ -> 3-я страна)</h4>
+                        <p class="text-gray-400 text-sm"><strong>Приоритет: СРЕДНИЙ.</strong> Это классическая тактика запутывания следов. Сама по себе она легальна, но в сочетании с другими флагами — очень подозрительна.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start p-4 bg-gray-700/30 rounded-lg">
+                    <div class="text-3xl font-bold text-gray-400 w-24 text-center shrink-0">+ 1 бал.</div>
+                    <div class="ml-5">
+                        <h4 class="font-bold text-lg text-gray-300">Использование Разных Документов</h4>
+                        <p class="text-gray-400 text-sm"><strong>Приоритет: НИЗКИЙ.</strong> Человек мог легально сменить паспорт. Мы отмечаем это, но не считаем серьезной угрозой без других факторов.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section id="funnel" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble">5</div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Шаг 5: Основные Группы Риска</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                Здесь представлены ключевые группы риска, отсортированные по количеству человек. Это альтернативный взгляд на данные из диаграммы, позволяющий оценить масштаб каждой аномалии.
+            </p>
+        </div>
+        
+        <div class="mt-16 max-w-3xl mx-auto space-y-1 font-bold">
+            <div class="funnel-stage bg-gray-700" style="width: 100%;">
+                <div class="text-4xl font-extrabold text-white text-glow">97,635</div>
+                <div class="mt-2 text-lg text-white">Использование Разных Документов</div>
+                <div class="text-sm text-gray-300 opacity-80">Приоритет: Низкий (+1 балл)</div>
+            </div>
+            <div class="funnel-stage bg-red-600" style="width: 90%; margin-left: auto; margin-right: auto;">
+                <div class="text-4xl font-extrabold text-white text-glow">58,185</div>
+                <div class="mt-2 text-lg text-white">Двойной Владелец Билета</div>
+                <div class="text-sm text-red-200 opacity-80">Приоритет: Критический (+8 баллов)</div>
+            </div>
+            <div class="funnel-stage bg-teal-600" style="width: 80%; margin-left: auto; margin-right: auto;">
+                <div class="text-4xl font-extrabold text-white text-glow">23,878</div>
+                <div class="mt-2 text-lg text-white">Сложный Транзит</div>
+                <div class="text-sm text-teal-200 opacity-80">Приоритет: Средний (+2 балла)</div>
+            </div>
+            <div class="funnel-stage bg-yellow-600" style="width: 70%; margin-left: auto; margin-right: auto;">
+                <div class="text-4xl font-extrabold text-white text-glow">16,654</div>
+                <div class="mt-2 text-lg text-white">Частые Перелеты (&gt;3/мес)</div>
+                <div class="text-sm text-yellow-200 opacity-80">Приоритет: Высокий (+4 балла)</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="culmination" class="mb-24 md:mb-32">
+        <div class="text-center">
+            <div class="step-bubble bg-red-600 border-red-500/20 shadow-red-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
+                </svg>
+            </div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white text-glow">Кульминация: Группа Максимального Риска</h2>
+            <p class="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+                После применения скоринговой модели ко всем профилям, система выделила группу лиц с максимальным набором "красных флагов". Это те, чья деятельность требует немедленного внимания.
+            </p>
+        </div>
+
+        <div class="mt-16 max-w-4xl mx-auto card bg-gradient-to-br from-gray-900 to-gray-900/70 border-2 border-red-500/50 p-10 text-center shadow-2xl shadow-red-500/10">
+            <p class="text-base font-medium text-red-300 tracking-widest uppercase">Главный результат</p>
+            <div class="my-4 flex items-center justify-center gap-6 flex-wrap">
+                <div class="flex items-baseline gap-3">
+                    <p class="text-7xl md:text-8xl font-extrabold text-white text-glow">381</p>
+                    <p class="text-3xl font-bold text-red-200">человек</p>
+                </div>
+                <div class="flex items-baseline gap-3">
+                    <p class="text-7xl md:text-8xl font-extrabold text-white text-glow">15</p>
+                    <p class="text-3xl font-bold text-red-200">баллов</p>
+                </div>
+            </div>
+            <p class="text-xl text-gray-300 mt-4">
+                Это наиболее подозрительные профили, требующие дальнейшей проверки.
+            </p>
+        </div>
+    </section>
+
+    <section id="results" class="text-center bg-gray-900 p-8 md:p-16 rounded-2xl border border-gray-800">
+        <h2 class="text-3xl md:text-4xl font-bold mb-6 text-white">Что в Итоге?</h2>
+        <p class="text-lg text-gray-300 max-w-3xl mx-auto mb-10">
+            Мы не просто проанализировали данные. Мы создали <strong>систему</strong>. Систему, которая из <strong class="text-cyan-400">3 миллионов</strong> анонимных записей выделила <strong class="text-red-500">381 наиболее опасный профиля</strong> для дальнейшей разработки службами безопасности.
+        </p>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                <h3 class="text-2xl font-bold text-cyan-400 mb-2">От Хаоса к Порядку</h3>
+                <p class="text-gray-400">Мы превратили <strong class="font-semibold text-cyan-400">6</strong> разрозненных источников в единую, чистую базу данных.</p>
+            </div>
+            <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                <h3 class="text-2xl font-bold text-cyan-400 mb-2">От Данных к Знаниям</h3>
+                <p class="text-gray-400">Мы разработали <strong class="font-semibold text-cyan-400">4 "красных флага"</strong> и систему скоринга для оценки угроз.</p>
+            </div>
+            <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                <h3 class="text-2xl font-bold text-cyan-400 mb-2">От Шума к Сигналу</h3>
+                <p class="text-gray-400">Мы отфильтровали <strong class="font-semibold text-cyan-400">3 млн.</strong> записей до <strong class="font-semibold text-red-500">381 профиля</strong> с наивысшим риском.</p>
+            </div>
+        </div>
+        <p class="text-lg max-w-3xl mx-auto mt-10 font-medium text-gray-300">
+            Наша работа — это не разовый анализ. Это готовый инструмент, который можно использовать для мониторинга угроз в режиме реального времени.
+        </p>
+    </section>
+</main>
+
+<footer class="text-center py-12 text-gray-500 border-t border-gray-800 mt-24">
+    © 2025 Мы чуть не сдохли это делать, всем спасибо!
+</footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Navigation ---
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('main > section');
+        const header = document.querySelector('header');
+        
+        const observer = new IntersectionObserver((entries) => {
+            let activeId = '';
+            for (const section of sections) {
+                // Check if section is below the header fold
+                if (section.getBoundingClientRect().top > header.offsetHeight + 1) {
+                    break;
+                }
+                activeId = section.id;
+            }
+
+            if (!activeId && sections.length > 0) {
+                 const firstSectionRect = sections[0].getBoundingClientRect();
+                 if (firstSectionRect.top > header.offsetHeight) {
+                    activeId = sections[0].id;
+                 }
+            }
+            
+            navItems.forEach(nav => {
+                nav.classList.toggle('active', nav.hash === `#${activeId}`);
+            });
+
+        }, { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1.0] });
+
+        sections.forEach(section => observer.observe(section));
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetElement = document.querySelector(item.hash);
+                if (targetElement) {
+                    const offset = document.querySelector('header').offsetHeight;
+                    window.scrollTo({
+                        top: targetElement.offsetTop - offset,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // --- Chart Default Config ---
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = 'Inter';
+
+        const defaultChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: '#1f2937', // gray-800
+                    titleColor: '#f9fafb', // gray-50
+                    bodyColor: '#d1d5db', // gray-300
+                    borderColor: '#374151', // gray-700
+                    borderWidth: 1,
+                    cornerRadius: 4,
+                    padding: 12,
+                    displayColors: false,
+                    bodyFont: { size: 14 },
+                    titleFont: { weight: 'bold', size: 16 }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#9ca3af', font: {} },
+                    grid: { color: 'rgba(55, 65, 81, 0.5)' /* gray-700/50 */ }
+                },
+                y: {
+                    ticks: { color: '#9ca3af', font: {} },
+                    grid: { color: 'rgba(55, 65, 81, 0.5)' /* gray-700/50 */ },
+                    beginAtZero: true
+                }
+            }
+        };
+
+        // --- Chart 1: Source Data ---
+        const sourceDataCtx = document.getElementById('sourceDataChart');
+        if (sourceDataCtx) {
+            new Chart(sourceDataCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['-yaml', '-json', '-xls', '-xml', '-tab', '-csv'],
+                    datasets: [{
+                        label: 'Количество записей',
+                        data: [1687054, 1308988, 615772, 436091, 155758, 155148],
+                        backgroundColor: [
+                            'rgba(6, 182, 212, 0.5)',   // cyan-500
+                            'rgba(99, 102, 241, 0.5)',  // indigo-500
+                            'rgba(34, 197, 94, 0.5)',   // green-500
+                            'rgba(245, 158, 11, 0.5)',  // amber-500
+                            'rgba(239, 68, 68, 0.5)',   // red-500
+                            'rgba(14, 165, 233, 0.5)'   // sky-500
+                        ],
+                        borderColor: [
+                            'rgba(6, 182, 212, 1)',
+                            'rgba(99, 102, 241, 1)',
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(14, 165, 233, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    ...defaultChartOptions,
+                    indexAxis: 'y',
+                    scales: {
+                         x: {
+                            ...defaultChartOptions.scales.x,
+                            title: { display: true, text: 'Количество записей', color: '#9ca3af' }
+                        },
+                        y: { ...defaultChartOptions.scales.y }
+                    },
+                    plugins: {
+                        ...defaultChartOptions.plugins,
+                        tooltip: {
+                            ...defaultChartOptions.plugins.tooltip,
+                            callbacks: {
+                                label: (context) => `${context.formattedValue} записей`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Chart 2: Analysis Results ---
+        const analysisResultsCtx = document.getElementById('analysisResultsChart');
+        if (analysisResultsCtx) {
+            new Chart(analysisResultsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Разные документы', 'Другой владелец билета', 'Транзит (РФ -> 3-я страна)', 'Частые перелеты (>3/мес)'],
+                    datasets: [{
+                        label: 'Обнаружено инцидентов',
+                        data: [97635, 58185, 23878, 16654],
+                        backgroundColor: [
+                            'rgba(107, 114, 128, 0.5)',  // Gray
+                            'rgba(239, 68, 68, 0.5)',    // Red
+                            'rgba(20, 184, 166, 0.5)',   // Teal
+                            'rgba(234, 179, 8, 0.5)'     // Yellow
+                        ],
+                        borderColor: [
+                            'rgba(107, 114, 128, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(20, 184, 166, 1)',
+                            'rgba(234, 179, 8, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    ...defaultChartOptions,
+                    scales: {
+                        x: { ...defaultChartOptions.scales.x },
+                        y: {
+                            ...defaultChartOptions.scales.y,
+                            title: { display: true, text: 'Количество человек', color: '#9ca3af' }
+                        }
+                    },
+                    plugins: {
+                        ...defaultChartOptions.plugins,
+                        tooltip: {
+                             ...defaultChartOptions.plugins.tooltip,
+                            callbacks: {
+                                label: (context) => `${context.formattedValue} чел.`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
+
+
+
